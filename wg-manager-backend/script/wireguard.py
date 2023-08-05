@@ -53,11 +53,14 @@ class TempServerFile():
 
 def _run_wg(server: schemas.WGServer, command):
     try:
-        output = subprocess.check_output(const.CMD_WG_COMMAND + command, stderr=subprocess.STDOUT)
-        return output
+        return subprocess.check_output(
+            const.CMD_WG_COMMAND + command, stderr=subprocess.STDOUT
+        )
     except Exception as e:
         if b'Operation not permitted' in e.output:
-            raise WGPermissionsError("The user has insufficient permissions for interface %s" % server.interface)
+            raise WGPermissionsError(
+                f"The user has insufficient permissions for interface {server.interface}"
+            )
 
 
 def is_installed():
@@ -87,25 +90,34 @@ def generate_psk():
 def start_interface(server: typing.Union[schemas.WGServer, schemas.WGPeer]):
     with TempServerFile(server) as server_file:
         try:
-            # print(*const.CMD_WG_QUICK, "up", server_file)
-            output = subprocess.check_output(const.CMD_WG_QUICK + ["up", server_file], stderr=subprocess.STDOUT)
-            return output
+            return subprocess.check_output(
+                const.CMD_WG_QUICK + ["up", server_file],
+                stderr=subprocess.STDOUT,
+            )
         except Exception as e:
             print(e.output)
             if b'already exists' in e.output:
-                raise WGAlreadyStartedError("The wireguard device %s is already started." % server.interface)
+                raise WGAlreadyStartedError(
+                    f"The wireguard device {server.interface} is already started."
+                )
             elif b'Address already in use' in e.output:
-                raise WGPortAlreadyInUse("The port %s is already used by another application." % server.listen_port)
+                raise WGPortAlreadyInUse(
+                    f"The port {server.listen_port} is already used by another application."
+                )
 
 
 def stop_interface(server: schemas.WGServer):
     with TempServerFile(server) as server_file:
         try:
-            output = subprocess.check_output(const.CMD_WG_QUICK + ["down", server_file], stderr=subprocess.STDOUT)
-            return output
+            return subprocess.check_output(
+                const.CMD_WG_QUICK + ["down", server_file],
+                stderr=subprocess.STDOUT,
+            )
         except Exception as e:
             if b'is not a WireGuard interface' in e.output:
-                raise WGAlreadyStoppedError("The wireguard device %s is already stopped." % server.interface)
+                raise WGAlreadyStoppedError(
+                    f"The wireguard device {server.interface} is already stopped."
+                )
 
 
 def restart_interface(server: schemas.WGServer):
@@ -172,12 +184,12 @@ def get_stats(server: schemas.WGServer):
                     rx=None,
                     tx=None
                 ))
-            elif len(lines) == 5 or len(lines) == 6:
+            elif len(lines) in {5, 6}:
                 public_key = lines[0]
                 client_endpoint, allowed_ips, handshake, rx_tx = lines[-4:]  # [1] is sometimes psk
 
-                rx = re.match(r"^(.*) received", rx_tx).group(1)
-                tx = re.match(r"^.*, (.*)sent", rx_tx).group(1)
+                rx = re.match(r"^(.*) received", rx_tx)[1]
+                tx = re.match(r"^.*, (.*)sent", rx_tx)[1]
                 peers.append(dict(
                     public_key=public_key,
                     client_endpoint=client_endpoint,
@@ -188,7 +200,7 @@ def get_stats(server: schemas.WGServer):
                 ))
 
             else:
-                ValueError("We have not handled peers with line number of %s" % str(len(lines)))
+                ValueError(f"We have not handled peers with line number of {len(lines)}")
 
         return peers
     except Exception as e:
@@ -210,18 +222,15 @@ def generate_config(obj: typing.Union[typing.Dict[schemas.WGPeer, schemas.WGServ
     if isinstance(obj, dict) and "server" in obj and "peer" in obj:
         template = "peer.j2"
         is_ipv6 = obj["server"].v6_address is not None
-    elif isinstance(obj, schemas.WGServer) or isinstance(obj, models.WGServer):
+    elif isinstance(obj, (schemas.WGServer, models.WGServer)):
         template = "server.j2"
         is_ipv6 = obj.v6_address is not None
     else:
         raise ValueError("Incorrect input type. Should be WGPeer or WGServer")
 
-    result = util.jinja_env.get_template(template).render(
-        data=obj,
-        is_ipv6=is_ipv6
+    return util.jinja_env.get_template(template).render(
+        data=obj, is_ipv6=is_ipv6
     )
-
-    return result
 
 
 def retrieve_client_conf_from_server(
@@ -235,13 +244,11 @@ def retrieve_client_conf_from_server(
     const.CLIENT_SERVER_HOST = "http://localhost:4200"
     const.CLIENT_API_KEY = "8bae20143fb962930614952d80634822361fd5ab9488053866a56de5881f9d7b"
 
-    assert server_interface is not None and \
-           server_host is not None and \
-           server_api_key is not None, "Client configuration is invalid: %s, %s, api-key-is-null?: %s" % (
-        server_interface,
-        server_host,
-        server_api_key is None
-    )
+    assert (
+        server_interface is not None
+        and server_host is not None
+        and server_api_key is not None
+    ), f"Client configuration is invalid: {server_interface}, {server_host}, api-key-is-null?: {server_api_key is None}"
 
     api_get_or_add = f"{server_host}/api/v1/peer/configuration/get_or_add"
 
@@ -254,7 +261,7 @@ def retrieve_client_conf_from_server(
 
     if response.status_code != 200:
         print(response.text)
-        raise RuntimeError("Could not retrieve config from server: %s" % (api_get_or_add,))
+        raise RuntimeError(f"Could not retrieve config from server: {api_get_or_add}")
 
     return response.text
 
@@ -328,7 +335,7 @@ def create_client_config(sess: Session, configuration, client_name, client_route
         elif isinstance(ipaddress.ip_address(addr), ipaddress.IPv6Address):
             db_peer.v6_address = address_with_subnet
         else:
-            raise RuntimeError("Incorrect IP Address: %s, %s" % (addr, subnet))
+            raise RuntimeError(f"Incorrect IP Address: {addr}, {subnet}")
 
     db_peer.private_key = parser["Interface"]["PrivateKey"]
     db_peer.public_key = "N/A"
@@ -370,10 +377,11 @@ def load_environment_clients(sess: Session):
         client_api_key = os.getenv(f"CLIENT_{i}_API_KEY", None)
         client_routes = os.getenv(f"CLIENT_{i}_ROUTES", None)
 
-        if client_api_key is None or \
-                client_server_interface is None or \
-                client_server_host is None or \
-                client_api_key is None:
+        if (
+            client_api_key is None
+            or client_server_interface is None
+            or client_server_host is None
+        ):
             break
 
         _LOGGER.warning(

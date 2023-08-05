@@ -34,7 +34,7 @@ class ObfuscationViaTOR(BaseObfuscation):
         super().ensure_installed()
         output, code = self.execute("--version")
 
-        if re.match(f'Tor version .*', output) and code == 0:
+        if re.match('Tor version .*', output) and code == 0:
             return True
         else:
             raise RuntimeError(f"Could not verify that {self.binary_name} is installed correctly.")
@@ -69,19 +69,19 @@ class ObfuscationViaTOR(BaseObfuscation):
         with open(self.tor_fingerprint_file, "r") as f:
             fingerprint = f.read().split(" ")
             assert len(fingerprint) == 2, "Could not load fingerprint correctly. " \
-                                          "Should be a list of 2 items (name, fingerprint)"
+                                              "Should be a list of 2 items (name, fingerprint)"
             fingerprint = fingerprint[1]
 
         with open(self.tor_bridge_file, "r") as f:
             bridge_line_raw = f.read()
 
-        bridge_line = re.search(r"^Bridge .*", bridge_line_raw, re.MULTILINE).group(0)
+        bridge_line = re.search(r"^Bridge .*", bridge_line_raw, re.MULTILINE)[0]
         bridge_line = bridge_line\
-            .replace("<IP ADDRESS>", ip_address)\
-            .replace("<PORT>", str(const.OBFUSCATE_TOR_LISTEN_ADDR))\
-            .replace("<FINGERPRINT>", fingerprint)\
-            .replace("Bridge ", "bridge://")\
-            .replace("\n", "")
+                .replace("<IP ADDRESS>", ip_address)\
+                .replace("<PORT>", str(const.OBFUSCATE_TOR_LISTEN_ADDR))\
+                .replace("<FINGERPRINT>", fingerprint)\
+                .replace("Bridge ", "bridge://")\
+                .replace("\n", "")
         #bridge_line = f"bridge://{self.algorithm.algorithm} {ip_address}:{const.OBFUSCATE_SOCKS_TOR_PORT} {fingerprint}"
         print(bridge_line)
         return bridge_line

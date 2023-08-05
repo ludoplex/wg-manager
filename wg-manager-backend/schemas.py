@@ -48,7 +48,7 @@ class GenericModel(BaseModel):
         return self
 
     def columns(self, no_exclude=False):
-        cols = set([x for x in dir(self.Meta.model) if not x.startswith("_")])
+        cols = {x for x in dir(self.Meta.model) if not x.startswith("_")}
         #cols = set([str(x).replace(f"{self.Meta.model.__table__.name}.", "") for x in self.Meta.model.__table__.columns])
         return cols if no_exclude else cols - self.Meta.excludes
 
@@ -79,11 +79,8 @@ class GenericModel(BaseModel):
                 except ValueError as e:
                     pass
             return self
-        except MultipleResultsFound as e:
+        except (MultipleResultsFound, NoResultFound) as e:
             _LOGGER.exception(e)
-        except NoResultFound as e:
-            _LOGGER.exception(e)
-
         _LOGGER.warning("We did not find any records in the database that corresponds to the model. This means you "
                         "are trying to fetch a unsaved schema!")
         return None

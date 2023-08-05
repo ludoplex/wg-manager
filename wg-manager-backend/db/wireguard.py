@@ -18,7 +18,9 @@ from util import WGMHTTPException
 
 def start_client(sess: Session, peer: schemas.WGPeer):
     db_peer: models.WGPeer = peer_query_get_by_address(sess, peer.address, peer.server).one()
-    client_file = os.path.join(const.CLIENT_DIR(db_peer.server.interface), str(db_peer.id) + ".conf")
+    client_file = os.path.join(
+        const.CLIENT_DIR(db_peer.server.interface), f"{str(db_peer.id)}.conf"
+    )
     import subprocess
     output = subprocess.check_output(const.CMD_WG_QUICK + ["up", client_file], stderr=subprocess.STDOUT)
 
@@ -237,7 +239,9 @@ def server_add(server: schemas.WGServerAdd, sess: Session, start=False):
 def server_remove(sess: Session, server: schemas.WGServer) -> bool:
     db_server = server_query_get_by_interface(sess, server.interface).one()
     if db_server is None:
-        raise ValueError("The server with interface %s is already deleted." % server.interface)
+        raise ValueError(
+            f"The server with interface {server.interface} is already deleted."
+        )
 
     sess.delete(db_server)
     sess.commit()

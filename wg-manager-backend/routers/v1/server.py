@@ -76,7 +76,9 @@ def delete_server(
         script.wireguard.stop_interface(form_data)
 
     if not db.wireguard.server_remove(sess, form_data):
-        raise HTTPException(400, detail="Were not able to delete %s" % form_data.interface)
+        raise HTTPException(
+            400, detail=f"Were not able to delete {form_data.interface}"
+        )
     return form_data
 
 

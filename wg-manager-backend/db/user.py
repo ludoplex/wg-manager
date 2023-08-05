@@ -20,9 +20,7 @@ def update_user(sess: Session, form_data: schemas.UserInDB):
 
 def authenticate_user(sess, username: str, password: str) -> Optional[models.User]:
     user = get_user_by_name(sess, username)
-    if user and verify_password(password, user.password):
-        return user
-    return None
+    return user if user and verify_password(password, user.password) else None
 
 
 def get_user_by_name(db: Session, username: str) -> models.User:

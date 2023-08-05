@@ -10,8 +10,9 @@ OBFUSCATE_MODE = os.getenv("OBFUSCATION_MODE", "obfs4")
 OBFUSCATE_SOCKS_TOR_PORT = int(os.getenv("OBFUSCATE_SOCKS_TOR_PORT", "5555"))
 OBFUSCATE_TOR_LISTEN_ADDR = int(os.getenv("OBFUSCATE_TOR_LISTEN_ADDR", "5556"))
 OBFUSCATE_SUPPORTED = ["obfs4"]
-assert OBFUSCATE_MODE in OBFUSCATE_SUPPORTED, "Invalid OBFUSCATE_MODE=%s, Valid options are: %s" % (OBFUSCATE_MODE,
-                                                                                                    OBFUSCATE_SUPPORTED)
+assert (
+    OBFUSCATE_MODE in OBFUSCATE_SUPPORTED
+), f"Invalid OBFUSCATE_MODE={OBFUSCATE_MODE}, Valid options are: {OBFUSCATE_SUPPORTED}"
 
 os.makedirs("build", exist_ok=True)
 DEFAULT_POST_UP = os.getenv("POST_UP", "iptables -A FORWARD -i %i -j ACCEPT; iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE;")
@@ -65,6 +66,10 @@ def _client_dir(interface):
 
 CLIENT_DIR = _client_dir
 
-PEER_FILE = lambda db_peer: os.path.join(CLIENT_DIR(db_peer.server_ref.interface), str(db_peer.id) + ".conf")
+PEER_FILE = lambda db_peer: os.path.join(
+    CLIENT_DIR(db_peer.server_ref.interface), f"{str(db_peer.id)}.conf"
+)
 
-SERVER_FILE = lambda interface: os.path.join(SERVER_DIR(interface), interface + ".conf")
+SERVER_FILE = lambda interface: os.path.join(
+    SERVER_DIR(interface), f"{interface}.conf"
+)

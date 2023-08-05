@@ -70,10 +70,12 @@ def get_api_keys(
         user: schemas.UserInDB = Depends(middleware.auth),
         sess: Session = Depends(middleware.get_db)
 ):
-    keys = [schemas.UserAPIKey.from_orm(x) for x in sess.query(models.UserAPIKey)
-            .filter(models.UserAPIKey.user_id == user.id).all()]
-
-    return keys
+    return [
+        schemas.UserAPIKey.from_orm(x)
+        for x in sess.query(models.UserAPIKey)
+        .filter(models.UserAPIKey.user_id == user.id)
+        .all()
+    ]
 
 
 @router.post("/login", response_model=schemas.Token)
@@ -107,21 +109,15 @@ def create_user(
         sess: Session = Depends(middleware.get_db),
         user: schemas.User = Depends(middleware.auth)
 ):
-    user = db.user.get_user_by_name(sess, form_data.username)
-
-    # User already exists
-    if user:
+    if user := db.user.get_user_by_name(sess, form_data.username):
         if not db.user.authenticate_user(sess, form_data.username, form_data.password):
             raise HTTPException(status_code=401, detail="Incorrect password")
 
-    else:
-
-        # Create the user
-        if not db.user.create_user(sess, models.User(
+    elif not db.user.create_user(sess, models.User(
                 username=form_data.username,
                 password=form_data.password,
                 full_name=form_data.full_name,
                 email=form_data.email,
                 role=form_data.role,
         )):
-            raise HTTPException(status_code=400, detail="Could not create user")
+        raise HTTPException(status_code=400, detail="Could not create user")

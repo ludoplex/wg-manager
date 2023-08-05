@@ -21,8 +21,7 @@ def ignore_duplicate(fn):
     try:
         fn()
     except OperationalError as e:
-        if "duplicate" in str(e):
-            pass
+        pass
 
 
 def upgrade():
