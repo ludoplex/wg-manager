@@ -33,9 +33,9 @@ class ShapeShifterBase(BaseObfuscation):
             algorithm=algorithm
         )
 
-        assert mode in ShapeShifterBase.MODES_SUPPORTED, "%s is not a supported mode. Supported: %s" % (
-            mode, ShapeShifterBase.MODES_SUPPORTED
-        )
+        assert (
+            mode in ShapeShifterBase.MODES_SUPPORTED
+        ), f"{mode} is not a supported mode. Supported: {ShapeShifterBase.MODES_SUPPORTED}"
 
         self._wireguard_port = wireguard_port
         self._listen_port = listen_port
@@ -59,15 +59,19 @@ class ShapeShifterBase(BaseObfuscation):
         major, minor, patch = match.split(".")
 
         if int(major) < self._go_version_min[0] or int(minor) < self._go_version_min[1] or \
-                int(patch) < self._go_version_min[2]:
-            raise GoVersionIncompatible("Go version is incompatible. %s < %s" % (self._go_version_min, match))
+                    int(patch) < self._go_version_min[2]:
+            raise GoVersionIncompatible(
+                f"Go version is incompatible. {self._go_version_min} < {match}"
+            )
 
     def _verify_git_installed(self):
         output, code = self.execute("version", override_command="git")
         if code == 0:
             return
 
-        raise GitNotInstalled("Git does not seem to be installed. Code: %s, Output: %s" % (code, output))
+        raise GitNotInstalled(
+            f"Git does not seem to be installed. Code: {code}, Output: {output}"
+        )
 
     def _verify_shapeshifter_installed(self):
         output, code = self.execute("version", override_command=shapeshifter_binary)
@@ -84,7 +88,7 @@ class ShapeShifterBase(BaseObfuscation):
             shapeshifter_path,
             override_command="git")
 
-        assert code == 0, "Git exited with error. %s" % (output,)
+        assert code == 0, f"Git exited with error. {output}"
 
         current_working_dir = os.getcwd()
         os.chdir(shapeshifter_path)
@@ -92,7 +96,7 @@ class ShapeShifterBase(BaseObfuscation):
         output, code = self.execute("build", override_command="go")
         os.chdir(current_working_dir)
 
-        assert code == 0, "Building shapeshifter failed with output: %s" % (output,)
+        assert code == 0, f"Building shapeshifter failed with output: {output}"
 
     def ensure_installed(self):
         try:
@@ -113,7 +117,7 @@ class ShapeShifterBase(BaseObfuscation):
         bind_port = self._listen_port if self._mode == "server" else self._client_replicant_port
         bind_value = f"127.0.0.1:{bind_port}"  # TODO
         if self._mode == "server":
-            bind_value = self.algorithm + "-" + bind_value
+            bind_value = f"{self.algorithm}-{bind_value}"
         connect_command = "orport" if self._mode == "server" else "target"
         connect_port = self._wireguard_port if self._mode == "server" else self._listen_port
 
@@ -121,10 +125,14 @@ class ShapeShifterBase(BaseObfuscation):
             "-transparent",
             "-udp",
             f"-{self._mode}",
-            "-state", f"state",
-            f"-{connect_command}", f"127.0.0.1:{connect_port}",
-            "-transports", self.algorithm,
-            f"-{bind_command}", bind_value
+            "-state",
+            "state",
+            f"-{connect_command}",
+            f"127.0.0.1:{connect_port}",
+            "-transports",
+            self.algorithm,
+            f"-{bind_command}",
+            bind_value,
         ]
 
         if self._mode == "client":

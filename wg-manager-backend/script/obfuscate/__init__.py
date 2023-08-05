@@ -27,7 +27,7 @@ class BaseObfuscation(abc.ABC):
             data = [x.decode().strip() for x in proc_which.communicate() if x != b''][0]
 
             if proc_which.returncode != 0:
-                raise NotInstalledError("Could not find binary '%s'" % data)
+                raise NotInstalledError(f"Could not find binary '{data}'")
 
             self.binary_path = data
 
@@ -50,10 +50,7 @@ class BaseObfuscation(abc.ABC):
             raw_data = proc_which.communicate()
 
             data = [x.decode().strip() for x in raw_data if x != b'']
-            if len(data) == 0:
-                data = ""
-            else:
-                data = data[0]
+            data = "" if not data else data[0]
             return data, proc_which.returncode
 
         else:
@@ -63,8 +60,7 @@ class BaseObfuscation(abc.ABC):
                     break
                 if output:
                     print(prefix + output.strip().decode())
-            rc = proc_which.poll()
-            return rc
+            return proc_which.poll()
 
 
 

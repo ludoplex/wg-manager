@@ -50,7 +50,10 @@ def add_peer(
     server = schemas.WGServer(interface=peer_add.server_interface).from_db(sess)
 
     if server is None:
-        raise HTTPException(500, detail="The server-interface '%s' does not exist!" % peer_add.server_interface)
+        raise HTTPException(
+            500,
+            detail=f"The server-interface '{peer_add.server_interface}' does not exist!",
+        )
 
     peer = schemas.WGPeer(server_id=server.id)
 
@@ -126,7 +129,10 @@ def delete_peer(
     server = sess.query(models.WGServer).filter_by(id=peer.server_id).one()
 
     if not db.wireguard.peer_remove(sess, peer):
-        raise HTTPException(400, detail="Were not able to delete peer %s (%s)" % (peer.name, peer.public_key))
+        raise HTTPException(
+            400,
+            detail=f"Were not able to delete peer {peer.name} ({peer.public_key})",
+        )
 
     if script.wireguard.is_running(schemas.WGServer(interface=server.interface)):
         script.wireguard.remove_peer(server, peer)
